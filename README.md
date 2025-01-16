@@ -19,6 +19,9 @@ This is a Movie Booking Application built using Spring Boot. The application all
 - Delete movies with Verified admin credentials
 - Book tickets for a specific movie
 - Sends mail on successfull booking to the user mail
+- Cancel Seat Booking
+- Get Available Seats for a Movie
+- Get All Seat Bookings by Movie ID
 
 ### Prerequisites
 - JDK 17 or higher
@@ -78,6 +81,8 @@ Make sure to update application.properties with your database credentials and ot
 - **URL:** `/addmovie`
 - **Method:** `POST`
 - **Query Params:**
+  - `username`: String
+  - `password`: String
   - `title`: String
   - `director`: String
   - `description`: String
@@ -88,7 +93,7 @@ Make sure to update application.properties with your database credentials and ot
   - `availableSeats`: Integer
   - `price`: Integer
 - **Response:** 
-  - Movie details.
+  - Movie addition status (Boolean).
 
 ---
 
@@ -96,6 +101,8 @@ Make sure to update application.properties with your database credentials and ot
 - **URL:** `/deletemovie`
 - **Method:** `DELETE`
 - **Query Params:**
+  - `username` : String
+  - `password` : String
   - `id`: Integer (Movie ID)
 - **Response:** 
   - Confirmation of deletion.
@@ -109,9 +116,39 @@ Make sure to update application.properties with your database credentials and ot
   - `id`: Integer (Movie ID)
   - `contact`: Long
   - `mail`: String
-  - `seats`: Integer
+  - `seats`: Integer[]
   - `date`: LocalDate
 - **Response:** 
   - Confirmation of ticket booking.
   - Sends mail on successfull booking.
 
+---
+
+### 8. Get All Seat Bookings by Movie ID
+- **URL:** `/seatbookings/{movieId}`
+- **Method:** `GET`
+- **Path Variables:**
+  - `movieId`: Integer (Movie ID)
+- **Response:** 
+  - List of seat bookings for the movie, or 204 No Content if no bookings.
+
+---
+
+### 9. Get Available Seats for a Movie
+- **URL:** `/available-seats/{movieId}`
+- **Method:** `GET`
+- **Path Variables:**
+  - `movieId`: Integer (Movie ID)
+- **Response:** 
+  - List of available seats, or 204 No Content if no available seats.
+  
+---
+
+### 10. Cancel Seat Booking
+- **URL:** `/cancel-seat-booking`
+- **Method:** `POST`
+- **Path Variables:**
+  - `movieId`: Integer (Movie ID)
+  - `seatNumber`: Integer
+- **Response:** 
+  - Success message or error message if the seat was not found or not booked.
