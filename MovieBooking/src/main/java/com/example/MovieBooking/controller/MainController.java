@@ -1,9 +1,11 @@
 package com.example.MovieBooking.controller;
 
+import com.example.MovieBooking.Dto.RequestDto.*;
+import com.example.MovieBooking.Dto.ResponseDto.HistoryResponseDTO;
+import com.example.MovieBooking.Dto.ResponseDto.MovieResponseDTO;
+import jakarta.validation.Valid;
 import com.example.MovieBooking.service.UserService;
 import com.example.MovieBooking.table.Admin;
-import com.example.MovieBooking.table.History;
-import com.example.MovieBooking.table.Movie;
 import com.example.MovieBooking.table.Seatbooking;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +20,9 @@ public class MainController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/getMovie")
-    public ResponseEntity<?> getMovie(@RequestParam Integer id){
-        Optional<Movie> movie= userService.getMovieById(id);
+    @GetMapping("/getMovie/{id}")
+    public ResponseEntity<?> getMovie(@PathVariable int id){
+        Optional<MovieResponseDTO> movie= userService.getMovieById(id);
         if (movie.isPresent()) {
             return ResponseEntity.ok(movie.get());
         } else {
@@ -29,41 +31,36 @@ public class MainController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<Iterable<Movie>> getAllMovies(){
+    public ResponseEntity<Iterable<MovieResponseDTO>> getAllMovies(){
         return ResponseEntity.ok(userService.getAllMovies());
     }
 
     @GetMapping("/gethistory")
-    public ResponseEntity<Iterable<History>> getistory(){
+    public ResponseEntity<Iterable<HistoryResponseDTO>> getistory(){
         return ResponseEntity.ok(userService.getHistory());
     }
 
     @PostMapping("/addadmin")
-    public ResponseEntity<Admin> addadmin(@RequestParam String username,@RequestParam String password){
-        return ResponseEntity.ok(userService.addAdmin(username,password));
+    public ResponseEntity<Admin> addadmin(@Valid @RequestBody AdminRequestDTO adminRequestDTO){
+        return ResponseEntity.ok(userService.addAdmin(adminRequestDTO));
     }
 
     @PostMapping("/addmovie")
-    public ResponseEntity<Boolean> addmovie(@RequestParam String username, @RequestParam String password,@RequestParam String title, @RequestParam String director, @RequestParam String description, @RequestParam String genre, @RequestParam LocalDate date, @RequestParam String location, @RequestParam Integer totalSeats, @RequestParam Integer availableSeats, @RequestParam Integer price){
-        boolean isMovie=userService.addMovie(username,password,title, director, description,genre,date,location,totalSeats,availableSeats,price);
+    public ResponseEntity<Boolean> addmovie(@Valid @RequestBody MovieRequestDTO movieRequestDTO){
+        boolean isMovie=userService.addMovie(movieRequestDTO);
         return ResponseEntity.ok(isMovie);
     }
 
     @DeleteMapping("/deletemovie")
-    public ResponseEntity<Boolean> deletemovie(@RequestParam String username, @RequestParam String password,@RequestParam Integer id){
-        boolean isDelete=userService.deleteMovie(username,password,id);
+    public ResponseEntity<Boolean> deletemovie(@Valid @RequestBody DeleteRequestDTO deleteRequestDTO){
+        boolean isDelete=userService.deleteMovie(deleteRequestDTO);
         return ResponseEntity.ok(isDelete);
     }
 
     @PostMapping("/bookticket")
-    public ResponseEntity<?> bookTicket(
-            @RequestParam Integer id,
-            @RequestParam long contact,
-            @RequestParam String mail,
-            @RequestParam Integer[] seatNumbers,
-            @RequestParam LocalDate date) {
+    public ResponseEntity<?> bookTicket(@Valid @RequestBody BookTicketRequestDTO bookTicketRequestDTO) {
         try {
-            boolean result = userService.bookTicket(id, contact, mail, seatNumbers, date);
+            boolean result = userService.bookTicket(bookTicketRequestDTO);
             return ResponseEntity.ok("Ticket booking successful!");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -91,10 +88,8 @@ public class MainController {
     }
 
     @PostMapping("/cancel-seat-booking")
-    public ResponseEntity<String> cancelSeatBooking(
-            @RequestParam int movieId,
-            @RequestParam int seatNumber) {
-        Seatbooking canceledSeat = userService.cancelSeatBooking(movieId, seatNumber);
+    public ResponseEntity<String> cancelSeatBooking(@Valid @RequestBody CancelTicketRequestDTO cancelTicketRequestDTO) {
+        Seatbooking canceledSeat = userService.cancelSeatBooking(cancelTicketRequestDTO);
         if (canceledSeat != null) {
             return ResponseEntity.ok("Seat booking canceled successfully.");
         } else {

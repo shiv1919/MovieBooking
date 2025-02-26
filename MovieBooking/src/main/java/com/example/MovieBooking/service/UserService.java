@@ -1,5 +1,10 @@
 package com.example.MovieBooking.service;
 
+import com.example.MovieBooking.Dto.RequestDto.*;
+import com.example.MovieBooking.Dto.ResponseDto.HistoryResponseDTO;
+import com.example.MovieBooking.Dto.ResponseDto.MovieResponseDTO;
+import com.example.MovieBooking.Mapper.HistoryMapper;
+import com.example.MovieBooking.Mapper.MovieMapper;
 import com.example.MovieBooking.repository.AdminRepository;
 import com.example.MovieBooking.repository.HistoryRepository;
 import com.example.MovieBooking.repository.MovieRepository;
@@ -18,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -34,25 +40,41 @@ public class UserService {
     @Autowired
     private JavaMailSender javaMailSender;
 
+    @Autowired
+    private MovieMapper movieMapper;
+
+    @Autowired
+    private HistoryMapper historyMapper;
+
     @Value("${spring.mail.username}")
     private String sender;
 
     @Autowired
     private SeatbookingRepository seatbookingRepository;
 
-    public Optional<Movie> getMovieById(Integer id) {
-        return movieRepository.findById(id);
+    public Optional<MovieResponseDTO> getMovieById(Integer id) {
+        return movieRepository.findById(id)
+                .map(movieMapper::movieToMovieResponseDTO);
+
     }
 
-    public Iterable<Movie> getAllMovies() {
-        return movieRepository.findAll();
+    public List<MovieResponseDTO> getAllMovies() {
+        List<Movie> movies = movieRepository.findAll();
+        return movies.stream()
+                .map(movieMapper::movieToMovieResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    public Iterable<History> getHistory() {
-        return historyRepository.findAll();
+    public Iterable<HistoryResponseDTO> getHistory() {
+        List<History> history = historyRepository.findAll();
+        return history.stream()
+                .map(historyMapper::historyToHistoryResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    public Admin addAdmin(String username, String password) {
+    public Admin addAdmin(AdminRequestDTO adminRequestDTO) {
+        String username=adminRequestDTO.getUsername();
+        String password=adminRequestDTO.getPassword();
         Admin admin = new Admin();
         admin.setUsername(username);
         admin.setPassword(password);
@@ -60,21 +82,13 @@ public class UserService {
         return admin;
     }
 
-    public boolean addMovie(String username, String password, String title, String director, String description, String genre, LocalDate date, String location, Integer totalSeats, Integer availableSeats, Integer price) {
+    public boolean addMovie(MovieRequestDTO movieRequestDTO) {
+        String username=movieRequestDTO.getUsername();
+        String password=movieRequestDTO.getPassword();
         if (verifyAdmin(username, password)) {
-            Movie movie = new Movie();
-            movie.setTitle(title);
-            movie.setDirector(director);
-            movie.setDescription(description);
-            movie.setGenre(genre);
-            movie.setDate(date);
-            movie.setLocation(location);
-            movie.setTotalseats(totalSeats);
-            movie.setAvailableseats(availableSeats);
-            movie.setPrice(price);
+            Movie movie = movieMapper.movieRequestDTOToMovie(movieRequestDTO);
             movieRepository.save(movie);
-
-
+            int totalSeats=movieRequestDTO.getTotalseats();
             for (int i = 1; i <= totalSeats; i++) {
                 Seatbooking seat = new Seatbooking();
                 seat.setMovieId(movie.getId());
@@ -88,7 +102,10 @@ public class UserService {
         return false;
     }
 
-    public boolean deleteMovie(String username, String password, Integer id) {
+    public boolean deleteMovie(DeleteRequestDTO deleteRequestDTO) {
+        int id=deleteRequestDTO.getId();
+        String username=deleteRequestDTO.getUsername();
+        String password=deleteRequestDTO.getPassword();
         Optional<Movie> movie = movieRepository.findById(id);
         if (movie.isPresent() && verifyAdmin(username, password)) {
             movieRepository.deleteById(id);
@@ -97,7 +114,12 @@ public class UserService {
         return false;
     }
 
-    public boolean bookTicket(Integer id, long contact, String mail, Integer[] seatNumbers, LocalDate date) {
+    public boolean bookTicket(BookTicketRequestDTO bookTicketRequestDTO ) {
+        int id=bookTicketRequestDTO.getId();
+        long contact=bookTicketRequestDTO.getContact();
+        String mail=bookTicketRequestDTO.getMail();
+        Integer[] seatNumbers=bookTicketRequestDTO.getSeatNumbers();
+        LocalDate date=bookTicketRequestDTO.getDate();
         Optional<Movie> movie = movieRepository.findById(id);
         if (!movie.isPresent()) {
             throw new IllegalArgumentException("Movie not found.");
@@ -163,7 +185,9 @@ public class UserService {
         return seatbookingRepository.findByMovieIdAndIsBooked(movieId, false);
     }
 
-    public Seatbooking cancelSeatBooking(int movieId, int seatNumber) {
+    public Seatbooking cancelSeatBooking(CancelTicketRequestDTO cancelTicketRequestDTO) {
+        int movieId=cancelTicketRequestDTO.getMovieId();
+        int seatNumber= cancelTicketRequestDTO.getSeatNumber();
         Seatbooking seat = seatbookingRepository.findByMovieIdAndSeatNumber(movieId, seatNumber);
 
         if (seat != null && seat.isBooked()) {
